@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import argparse
 from pyspark.sql import SparkSession
 from pyspark.ml.feature import VectorAssembler, StringIndexer
@@ -9,30 +8,32 @@ from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 def main(test_path, model_path):
     spark = SparkSession.builder.appName("WineQualityPredict").getOrCreate()
 
-    # Load test data
+    #load test data (semicolon-delimited, strip quotes)
     df = (spark.read
           .option("header", True)
           .option("inferSchema", True)
-          .option("sep", ";")         # tell Spark to split on semicolons
-          .option("quote", '"')       # strip wrapping double quotes
+          .option("sep", ";")
+          .option("quote", '"')
           .csv(test_path))
 
-    # Index the label column
+    #index the 'quality' column into 'label'
     idx = StringIndexer(inputCol="quality", outputCol="label")
-    df = idx.fit(df).transform(df)
+    df  = idx.fit(df).transform(df)
 
-    # Assemble features into vector
+    #assemble the features vector
     feature_cols = [c for c in df.columns if c not in ("quality","label")]
-    assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
-    data = assembler.transform(df)
+    assembler    = VectorAssembler(inputCols=feature_cols, outputCol="features")
+    data         = assembler.transform(df)
 
-    # Load the trained model
+    #load the trained model
     model = LogisticRegressionModel.load(model_path)
 
-    # Predict and evaluate
-    preds = model.transform(data)
+    #predict + evaluate
+    preds     = model.transform(data)
     evaluator = MulticlassClassificationEvaluator(
-        labelCol="label", predictionCol="prediction", metricName="f1")
+                    labelCol="label",
+                    predictionCol="prediction",
+                    metricName="f1")
     f1 = evaluator.evaluate(preds)
     print(f"Test F1 score = {f1:.4f}")
 
