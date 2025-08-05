@@ -10,7 +10,12 @@ def main(test_path, model_path):
     spark = SparkSession.builder.appName("WineQualityPredict").getOrCreate()
 
     # Load test data
-    df = spark.read.csv(test_path, header=True, inferSchema=True)
+    df = (spark.read
+          .option("header", True)
+          .option("inferSchema", True)
+          .option("sep", ";")         # tell Spark to split on semicolons
+          .option("quote", '"')       # strip wrapping quotes
+          .csv(test_path))
 
     # Index the label column
     idx = StringIndexer(inputCol="quality", outputCol="label")
