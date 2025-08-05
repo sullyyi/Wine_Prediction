@@ -31,20 +31,16 @@ def main(train_path, val_path, output_path):
     lr = LogisticRegression(featuresCol="features", labelCol="label", maxIter=20)
     model = lr.fit(train_data)
 
+    #write the model to the output path
+    model.write().overwrite().save(output_path)
+
+
     #evaluation on validation set
     preds = model.transform(val_data)
     evaluator = MulticlassClassificationEvaluator(
         labelCol="label", predictionCol="prediction", metricName="f1")
     f1 = evaluator.evaluate(preds)
     print(f"Validation F1 score = {f1:.4f}")
-
-    #save the model
-    hadoop_conf = spark._jsc.hadoopConfiguration()
-    fs = spark._jvm.org.apache.hadoop.fs.FileSystem.get(hadoop_conf)
-    model_path = spark._jvm.org.apache.hadoop.fs.Path(output_path)
-    if fs.exists(model_path):
-        fs.delete(model_path, True)
-    model.save(output_path)
 
     spark.stop()
 
@@ -55,3 +51,4 @@ if __name__ == "__main__":
     parser.add_argument("--output",   required=True, help="Directory to save the trained model")
     args = parser.parse_args()
     main(args.train, args.validate, args.output)
+
