@@ -14,7 +14,7 @@ def main(test_path, model_path):
           .option("header", True)
           .option("inferSchema", True)
           .option("sep", ";")         # tell Spark to split on semicolons
-          .option("quote", '"')       # strip wrapping quotes
+          .option("quote", '"')       # strip wrapping double quotes
           .csv(test_path))
 
     # Index the label column
