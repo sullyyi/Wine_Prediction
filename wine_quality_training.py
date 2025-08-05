@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import shutil
 from pyspark.sql import SparkSession
@@ -6,39 +7,46 @@ from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 
 def main(train_path, val_path, output_path):
-    #initialize Spark session
     spark = SparkSession.builder.appName("WineQualityTraining").getOrCreate()
 
-    #load datasets
-    train_df = spark.read.csv(train_path, header=True, inferSchema=True)
-    val_df   = spark.read.csv(val_path,   header=True, inferSchema=True)
+    #load CSVs with semicolon + quote handling
+    train_df = (spark.read
+                .option("header", True)
+                .option("inferSchema", True)
+                .option("sep", ";")
+                .option("quote", '"')
+                .csv(train_path))
 
-    #identify feature columns except the label for quality
-    feature_cols = [c for c in train_df.columns if c != "quality"]
+    val_df = (spark.read
+              .option("header", True)
+              .option("inferSchema", True)
+              .option("sep", ";")
+              .option("quote", '"')
+              .csv(val_path))
 
-    #index the label column
+    #index the label column (quality to label)
     idx = StringIndexer(inputCol="quality", outputCol="label")
     idx_model = idx.fit(train_df)
     train_df = idx_model.transform(train_df)
     val_df   = idx_model.transform(val_df)
 
-    #assemble features into a single vector column
+    #assemble feature vector
+    feature_cols = [c for c in train_df.columns if c not in ("quality", "label")]
     assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
     train_data = assembler.transform(train_df)
     val_data   = assembler.transform(val_df)
 
-    #logistic regression model
-    lr = LogisticRegression(featuresCol="features", labelCol="label", maxIter=20)
+    #train logistic regression
+    lr    = LogisticRegression(featuresCol="features", labelCol="label", maxIter=20)
     model = lr.fit(train_data)
 
-    #write the model to the output path
+    #persist model on disk
     model.write().overwrite().save(output_path)
 
-
-    #evaluation on validation set
-    preds = model.transform(val_data)
+    #evaluate on validation set
+    preds     = model.transform(val_data)
     evaluator = MulticlassClassificationEvaluator(
-        labelCol="label", predictionCol="prediction", metricName="f1")
+                    labelCol="label", predictionCol="prediction", metricName="f1")
     f1 = evaluator.evaluate(preds)
     print(f"Validation F1 score = {f1:.4f}")
 
@@ -51,4 +59,3 @@ if __name__ == "__main__":
     parser.add_argument("--output",   required=True, help="Directory to save the trained model")
     args = parser.parse_args()
     main(args.train, args.validate, args.output)
-
