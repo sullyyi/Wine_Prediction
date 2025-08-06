@@ -5,7 +5,7 @@
 \margl1440\margr1440\vieww11520\viewh9640\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0\fs24 \cf0 #This is my submission for the CS643 Programming Assignment 2. The goal was to build a wine\uc0\u8208 quality classifier in Spark, tune it with cross\u8208 validation, and then package the final predictor in a Docker container.\
+\f0\fs24 \cf0 #submission for the CS643 Programming Assignment 2. The goal was to build a wine\uc0\u8208 quality classifier in Spark, tune it with cross\u8208 validation, and then package the final predictor in a Docker container.\
 \
 Repository Layout:\
 	data/\
@@ -16,10 +16,10 @@ ValidationDataset-1.csv\
 .gitattributes\
 Dockerfile\
 wine_quality_predict.py #load any saved model and reports f1 score\
-wine_quality_training.py #trains and saves logistic regression model\
-wine_quality_training_RF.py #trains and saves random forest model\
-wine_quality_training_gbt.py #trains and saves gradient boosting trees model\
-wine_quality_training_gbt_cv.py #trains and saves GBT with 3 fold cross validation (worked best)\
+wine_quality_training.py #trains and saves logistic regression model (f1 = ~50%)\
+wine_quality_training_RF.py #trains and saves random forest model (f1 = ~45%)\
+wine_quality_training_gbt.py #trains and saves gradient boosting trees model (f1 = ~60%)\
+wine_quality_training_gbt_cv.py #trains and saves GBT with 3 fold cross validation (worked best, f1 = ~70%)\
 README.txt #this file\
 \
 ______________________\
@@ -45,8 +45,7 @@ spark-submit \\\
 \
 Output should say: \'93Validation F1 score = 0.70~~\
 Compared to an original, simple logistic regression model validating an f1 score of around = 0.50~~\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 ______________________\
+______________________\
 \
 One you have a saved model, you can use wine_quality_predict.py to quickly test and review the f1 score\
 \
@@ -65,8 +64,7 @@ docker run --rm \\\
 \
 Output: F1 score printed inside the container\
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 ______________________\
+______________________\
 \
 Versions:\
 PySpark 3.4.1\
