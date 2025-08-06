@@ -9,7 +9,7 @@ def main(train_path, val_path, output_path):
         .appName("WineQuality_GBT_Direct") \
         .getOrCreate()
 
-    #load CSVs with header, schema inference, and semicolon delimiter
+    # Load CSVs with header, schema inference, and semicolon delimiter
     def load(path):
         return (spark.read
                 .option("header", True)
@@ -21,19 +21,19 @@ def main(train_path, val_path, output_path):
     train_df = load(train_path)
     val_df   = load(val_path)
 
-    #index the "quality" column into numeric labels
+    # Index the "quality" column into numeric labels
     indexer = StringIndexer(inputCol="quality", outputCol="label")
     idx_model = indexer.fit(train_df)
     train_df = idx_model.transform(train_df)
     val_df   = idx_model.transform(val_df)
 
-    #assemble all feature columns into a single vector
+    # Assemble all feature columns into a single vector
     feature_cols = [c for c in train_df.columns if c not in ("quality", "label")]
     assembler    = VectorAssembler(inputCols=feature_cols, outputCol="features")
     train_data   = assembler.transform(train_df)
     val_data     = assembler.transform(val_df)
 
-    #instantiate GBTClassifier with best-found hyperparameters
+    # Instantiate GBTClassifier with best-found hyperparameters
     gbt = GBTClassifier(
         featuresCol="features",
         labelCol="label",
@@ -43,16 +43,16 @@ def main(train_path, val_path, output_path):
         stepSize=0.1
     )
 
-    #wrap in One-vs-Rest for multiclass support
+    # Wrap in One-vs-Rest for multiclass support
     ovr = OneVsRest(classifier=gbt, labelCol="label")
 
-    #train the final model
+    # Train the final model
     ovrModel = ovr.fit(train_data)
 
-    #save the model for serving
+    # Save the model for serving
     ovrModel.write().overwrite().save(output_path)
 
-    #evaluate on validation set
+    # Evaluate on validation set
     evaluator = MulticlassClassificationEvaluator(
         labelCol="label",
         predictionCol="prediction",
@@ -65,9 +65,23 @@ def main(train_path, val_path, output_path):
     spark.stop()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Direct GBT training with best hyperparameters")
-    parser.add_argument("--train",    required=True, help="Path to training CSV")
-    parser.add_argument("--validate", required=True, help="Path to validation CSV")
-    parser.add_argument("--output",   required=True, help="Directory to save the GBT model")
+    parser = argparse.ArgumentParser(
+        description="Direct GBT training with best hyperparameters"
+    )
+    parser.add_argument(
+        "--train", 
+        default="data/TrainingDataset-1.csv",
+        help="Path to training CSV (default: data/TrainingDataset-1.csv)"
+    )
+    parser.add_argument(
+        "--validate", 
+        default="data/ValidationDataset-1.csv",
+        help="Path to validation CSV (default: data/ValidationDataset-1.csv)"
+    )
+    parser.add_argument(
+        "--output",   
+        default="model_gbt",
+        help="Directory to save the GBT model (default: model_gbt)"
+    )
     args = parser.parse_args()
     main(args.train, args.validate, args.output)
