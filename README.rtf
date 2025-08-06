@@ -1,0 +1,73 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh9640\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 #This is my submission for the CS643 Programming Assignment 2. The goal was to build a wine\uc0\u8208 quality classifier in Spark, tune it with cross\u8208 validation, and then package the final predictor in a Docker container.\
+\
+Repository Layout:\
+	data/\
+TrainingDataset-1.csv\
+ValidationDataset-1.csv\
+	models/\
+.DS_Store\
+.gitattributes\
+Dockerfile\
+wine_quality_predict.py #load any saved model and reports f1 score\
+wine_quality_training.py #trains and saves logistic regression model\
+wine_quality_training_RF.py #trains and saves random forest model\
+wine_quality_training_gbt.py #trains and saves gradient boosting trees model\
+wine_quality_training_gbt_cv.py #trains and saves GBT with 3 fold cross validation (worked best)\
+README.txt #this file\
+\
+______________________\
+\
+Training on spark:\
+I set up a One-vs-Rest wrapper around Spark\'92s `GBTClassifier` and searched a small hyperparameter grid\
+(`maxDepth`, `maxIter`, `stepSize`) via 3-fold cross\uc0\u8208 validation. I saved outputs with f1 scores to view the \
+Data afterwards and determine the best combo.\
+\
+Once the best combo was found (maxDepth=5, maxIter=20, stepSize=0.1), I saved the details under `models/model_gbt`.\
+\
+To run it on a Spark standalone cluster (4 EC2 slave nodes), from the repo root:\
+\
+spark-submit \\\
+  --master spark://<master-ip>:7077 \\\
+  --total-executor-cores 8 \\\
+  --executor-cores 2 \\\
+  --conf spark.default.parallelism=8 \\\
+  wine_quality_training_gbt_cv.py \\\
+    --train  data/TrainingDataset-1.csv \\\
+    --validate data/ValidationDataset-1.csv \\\
+    --output models/model_gbt\
+\
+Output should say: \'93Validation F1 score = 0.70~~\
+Compared to an original, simple logistic regression model validating an f1 score of around = 0.50~~\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 ______________________\
+\
+One you have a saved model, you can use wine_quality_predict.py to quickly test and review the f1 score\
+\
+______________________\
+\
+The application container has been packed at DockerHub\
+\
+To pull it from DockerHub:\
+docker pull sullyyi/wine-predictor:latest\
+\
+To run against the validation dataset:\
+docker run --rm \\\
+  -v $(pwd)/data:/data \\\
+  sullyyi/wine-predictor:latest \\\
+  /data/ValidationDataset-1.csv\
+\
+Output: F1 score printed inside the container\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 ______________________\
+\
+Versions:\
+PySpark 3.4.1\
+Python 3.9}
