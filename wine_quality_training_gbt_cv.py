@@ -1,3 +1,8 @@
+#this model is trained using the best hyperparameters found in a previous tuning run
+#it is intended for direct use in production without further tuning
+#it uses a One-vs-Rest strategy to handle multiclass classification
+#it is designed to be run in a Spark environment with PySpark installed
+#it expects the training and validation datasets to be in CSV format with a semicolon delimiter
 import argparse
 from pyspark.sql import SparkSession
 from pyspark.ml.feature import VectorAssembler, StringIndexer
@@ -9,7 +14,7 @@ def main(train_path, val_path, output_path):
         .appName("WineQuality_GBT_Direct") \
         .getOrCreate()
 
-    # Load CSVs with header, schema inference, and semicolon delimiter
+    #load CSVs with header, schema inference, and semicolon delimiter
     def load(path):
         return (spark.read
                 .option("header", True)
@@ -21,38 +26,38 @@ def main(train_path, val_path, output_path):
     train_df = load(train_path)
     val_df   = load(val_path)
 
-    # Index the "quality" column into numeric labels
+    #index the "quality" column into numeric labels
     indexer = StringIndexer(inputCol="quality", outputCol="label")
     idx_model = indexer.fit(train_df)
     train_df = idx_model.transform(train_df)
     val_df   = idx_model.transform(val_df)
 
-    # Assemble all feature columns into a single vector
+    #assemble all feature columns into a single vector
     feature_cols = [c for c in train_df.columns if c not in ("quality", "label")]
     assembler    = VectorAssembler(inputCols=feature_cols, outputCol="features")
     train_data   = assembler.transform(train_df)
     val_data     = assembler.transform(val_df)
 
-    # Instantiate GBTClassifier with best-found hyperparameters
+    #instantiate GBTClassifier with best-found hyperparameters
     gbt = GBTClassifier(
         featuresCol="features",
         labelCol="label",
         seed=42,
         maxDepth=5,
-        maxIter=50,
+        maxIter=20,
         stepSize=0.1
     )
 
-    # Wrap in One-vs-Rest for multiclass support
+    #wrap in One-vs-Rest for multiclass support
     ovr = OneVsRest(classifier=gbt, labelCol="label")
 
-    # Train the final model
+    #train the final model
     ovrModel = ovr.fit(train_data)
 
-    # Save the model for serving
+    #save the model for serving
     ovrModel.write().overwrite().save(output_path)
 
-    # Evaluate on validation set
+    #evaluate on validation set
     evaluator = MulticlassClassificationEvaluator(
         labelCol="label",
         predictionCol="prediction",

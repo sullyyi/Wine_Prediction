@@ -1,4 +1,9 @@
-#!/usr/bin/env python3
+#this model is trained on the wine quality dataset using logistic regression
+#it reads training and validation data from CSV files, processes them, trains the model, and
+#evaluates it on the validation set, saving the trained model to disk
+#the model can be used for predicting wine quality based on its features
+#the script uses PySpark for distributed data processing and machine learning
+#the input CSVs are expected to have a semicolon as the separator and double quotes for enclosing string values, with a header row containing column names
 import argparse
 import shutil
 from pyspark.sql import SparkSession

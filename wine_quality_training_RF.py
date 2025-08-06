@@ -1,4 +1,8 @@
-#!/usr/bin/env python3
+#This version of the model is trained using random forest
+#and is intended to be used with PySpark.
+#It expects the test data to be in CSV format with semicolon as the delimiter.
+#The model is expected to be saved in a directory containing the model files.
+
 import argparse
 from pyspark.sql import SparkSession
 from pyspark.ml.feature import VectorAssembler, StringIndexer
